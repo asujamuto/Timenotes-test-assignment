@@ -12,6 +12,7 @@ import star from '../assets/star.png'
 import star2 from '../assets/star_full.png'
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
+import { bookmark, unbookmark, saveTask } from './mutations';
 
 const filter = createFilterOptions<FilmOptionType>();
 
@@ -22,64 +23,12 @@ interface Record {
     bookmarked: boolean;
 }
 
-const saveTask = async (name: string, token: string) => {
 
-    const info = {
-        method: 'POST',
-        headers:
-        {
-            "Content-Type": "application/json",
-            "Authorization": token.toString(),
-        },
-        body: JSON.stringify({
-            "name": name.toString()
-        })
-    }
-
-    const res = await fetch('https://timtest.timenotes.io/api/v1/tasks',
-        info);
-    return res.json();
-};
-
-
-
-const bookmark = async (id: number, token: string) => {
-
-    const url_firstPart = 'https://timtest.timenotes.io/api/v1/tasks/'
-    const url_lastPart = '/bookmark'
-    const full_url = url_firstPart + id + url_lastPart
-
-    const res = await fetch(full_url,{
-        method: 'POST',
-        headers:
-        {
-            "Authorization": token,
-        },
-    })
-    return res.json();
-};
-
-const unbookmark = async (id: number, token: string) => {
-
-    const url_firstPart = 'https://timtest.timenotes.io/api/v1/tasks/'
-    const url_lastPart = '/unbookmark'
-    const full_url = url_firstPart + id + url_lastPart
-
-    const res = await fetch(full_url,{
-        method: 'POST',
-        headers:
-        {
-            "Authorization": token,
-        },
-    }
-);
-    return res.json();
-};
 
 export default function FreeSoloCreateOptionDialog(taskList: object, token: string) {
     const [value, setValue] = React.useState<FilmOptionType | null>(null);
     const [open, toggleOpen] = React.useState(false);
-    const accessToken = taskList.token
+    const accessToken = localStorage.getItem('token')
 
 
     const options = taskList.taskList.data.map((option: Record) => {
@@ -92,25 +41,25 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
     const queryClient = useQueryClient();
 
     const saveTaskMutation = useMutation({
-        mutationFn: (newTask) => saveTask(newTask.name, newTask.token),
+        mutationFn: (newTask) => saveTask(newTask.name, accessToken),
         onSuccess: () => {
             queryClient.invalidateQueries('tasks');
         }
     });
 
     const bookmarkMutation = useMutation({
-        mutationFn: (bookmarkedState) => bookmark(bookmarkedState.id, bookmarkedState.token),
+        mutationFn: (bookmarkedState) => bookmark(bookmarkedState.id, accessToken),
         onSuccess: () => {
             queryClient.invalidateQueries('tasks');
         }
     })
     const unbookmarkMutation = useMutation({
-        mutationFn: (bookmarkedState) =>  unbookmark(bookmarkedState.id, bookmarkedState.token),
+        mutationFn: (bookmarkedState) => unbookmark(bookmarkedState.id, accessToken),
         onSuccess: () => {
             queryClient.invalidateQueries('tasks');
         }
     })
-    
+
     const changeBookmarkState = (bookmark: boolean, id: number, token: string) => {
 
         if (bookmark)
@@ -119,7 +68,7 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
             bookmarkMutation.mutate({ id, token })
     }
 
-    
+
 
     const handleClose = () => {
         setDialogValue({
@@ -188,7 +137,6 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
                 }}
 
                 getOptionLabel={(option) => {
-                    // for example value selected with enter, right from the input
                     if (typeof option === 'string') {
                         return option;
                     }
@@ -270,4 +218,3 @@ interface FilmOptionType {
     name: string;
     year?: number;
 }
-

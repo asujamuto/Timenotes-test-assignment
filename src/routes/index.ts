@@ -17,6 +17,9 @@ const homeRoute = createRoute({
 	getParentRoute: () => rootRoute,
 	path: '/home',
 	component: Home
+	
+		
+	
 })
 
 const routeTree = rootRoute.addChildren([indexRoute, homeRoute])

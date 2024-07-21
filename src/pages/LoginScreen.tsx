@@ -1,4 +1,4 @@
-import * as React from 'react';
+ import * as React from 'react';
 import { FormControl, useFormControlContext } from '@mui/base/FormControl';
 import FormGroup from '@mui/material/FormGroup';
 import { Input, inputClasses } from '@mui/base/Input';
@@ -11,96 +11,103 @@ import { FormSubmitHandler } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import Home from './Home';
+import { getAuthData } from './queries';
+import { useEffect } from 'react';
 
-
-/* const verification = async (email, password) => {
-    // Fetcher function
-    const getAuthData = async (email, password) => {
-        const res = await fetch('https://timtest.timenotes.io/api/v1/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password,
-            }),
-        });
-        return res.json();
-    };
-
-    const { data, error, isLoading } = await getAuthData(email, password);
-    if (error) return { error: `Error: ${error.message}` };
-    if (isLoading) return { data: "isLoading" };
-    else return data;
-};
-
- */
 export default function LoginScreen() {
 
     const [email, setEmail] = useState<string>('');
     const [password, setPassoword] = useState<string>('');
+    const [inputs, setInputs] = useState<object>({});
     const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
     const [authData, setAuthData] = useState<object>({});
+    const [accessToken, setAccessToken] = useState<string>("");
     const navigate = useNavigate();
 
 
+    
+    const authQuery = useQuery({
+        queryKey: ['token'],
+        queryFn: () => getAuthData(email, password),
+    });
 
-    const [fetchData, setFetchData] = useState<boolean>(false)
+    useEffect(() => {
+       authQuery.refetch()
+       console.log(authQuery.data)
+        
+        
+    }, [email, password])
 
-
-
-    /* const handleSubmit = (event) => {
-        event.preventDefault()
-        setEmail(event.email)
-        setPassoword(event.password)
-        setFetchData(true)
-        setAuthData(() => verification(email, password))
-    } */
+    
 
     const handleSubmit = async (event) => {
         event.preventDefault();
 
-        // const authData = await verification(email, password);
+        console.log(event.target.email.value)
+        console.log(event.target.password.value)
 
-        /* if (authData.error || authData.data?.error === "Invalid email or password") {
-            setErrorMessage('Invalid email or password');
-        } else {
-            // navigate('/home');
-        } */
+        setEmail(event.target.email.value)
+        setPassoword(event.target.password.value)
+
+        if(authQuery.data.accessToken && accessToken !== undefined)
+        {
+            setAccessToken(authQuery.data.accessToken)
+            localStorage.setItem('token', authQuery.data.accessToken)
+            navigate({ to: '/home' })
+        }
+        
     };
+    
+    const auth = true;
+        
 
+    if(accessToken == "")
+    {
+        
+        return (
+            <Container sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                height: '100vh',
+                justifyContent: 'center',
+            }}>
+                <form onSubmit={handleSubmit}>
+                    <Typography variant='h4' mb={5}>
+                        Login Screen
+                    </Typography>
+                    <FormGroup sx={{ gap: 2 }}>
+                        <FormControl defaultValue="" required>
+                            {/* <Label>Email</Label> */}
+                            <FormLabel>Email</FormLabel>
+                            <StyledInput
+                                name="email"
+                                label="email"
+                                onChange={e => setEmail(e.target.value)}
+                                value={inputs.email}
+                                placeholder="Write your name here" />
+                            <HelperText />
+                        </FormControl>
+                        <FormControl defaultValue="" required>
+                            <FormLabel>Password</FormLabel>
+                            <StyledInput
+                                name="password"
+                                label="password"
+                                onChange={e => setPassoword(e.target.value)}
+                                value={inputs.password}
+                                placeholder="Write your password here" />
+                            <HelperText />
+                        </FormControl>
+                        <Button variant="outlined" type="submit">Submit</Button>
+                        <Button onClick={() => { navigate({ to: '/home' }) }}>Next</Button>
+                    </FormGroup>
+                </form>
+            </Container>
+        );
 
-    return (
-        <Container sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            height: '100vh',
-            justifyContent: 'center',
-        }}>
-            <form onSubmit={() => handleSubmit}>
-                <Typography variant='h4' mb={5}>
-                    Login Screen
-                </Typography>
-                <FormGroup sx={{ gap: 2 }}>
-                    <FormControl defaultValue="" required>
-                        {/* <Label>Email</Label> */}
-                        <FormLabel>Email</FormLabel>
-                        <StyledInput onChange={e => setEmail(e.target.value)} name="email" placeholder="Write your name here" />
-                        <HelperText />
-                    </FormControl>
-                    <FormControl defaultValue="" required>
-                        <FormLabel>Password</FormLabel>
-                        <StyledInput onChange={e => setPassoword(e.target.value)} name="password" placeholder="Write your password here" />
-                        <HelperText />
-                    </FormControl>
-                    <Button variant="outlined" type="submit">Submit</Button>
-                    <Button onClick={() => { navigate({ to: '/home' }) }}>Next</Button>
-                </FormGroup>
-            </form>
-        </Container>
-    );
+    }
+    else
+        navigate({ to: '/home', params: accessToken })
 }
 
 const StyledInput = styled(Input)(
