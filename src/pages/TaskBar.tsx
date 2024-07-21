@@ -8,46 +8,138 @@ import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import { Box } from '@mui/system';
-import star from './star.png'
-import star2 from './star_full.png'
-import { useEffect } from 'react';
-import list from './list.json'
+import star from '../assets/star.png'
+import star2 from '../assets/star_full.png'
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 
 const filter = createFilterOptions<FilmOptionType>();
 
-export default function FreeSoloCreateOptionDialog() {
+interface Record {
+    inputValue?: string;
+    id: number;
+    name: string;
+    bookmarked: boolean;
+}
+
+const saveTask = async (name: string, token: string) => {
+
+    const info = {
+        method: 'POST',
+        headers:
+        {
+            "Content-Type": "application/json",
+            "Authorization": token.toString(),
+        },
+        body: JSON.stringify({
+            "name": name.toString()
+        })
+    }
+
+    const res = await fetch('https://timtest.timenotes.io/api/v1/tasks',
+        info);
+    return res.json();
+};
+
+
+
+const bookmark = async (id: number, token: string) => {
+
+    const url_firstPart = 'https://timtest.timenotes.io/api/v1/tasks/'
+    const url_lastPart = '/bookmark'
+    const full_url = url_firstPart + id + url_lastPart
+
+    const res = await fetch(full_url,{
+        method: 'POST',
+        headers:
+        {
+            "Authorization": token,
+        },
+    })
+    return res.json();
+};
+
+const unbookmark = async (id: number, token: string) => {
+
+    const url_firstPart = 'https://timtest.timenotes.io/api/v1/tasks/'
+    const url_lastPart = '/unbookmark'
+    const full_url = url_firstPart + id + url_lastPart
+
+    const res = await fetch(full_url,{
+        method: 'POST',
+        headers:
+        {
+            "Authorization": token,
+        },
+    }
+);
+    return res.json();
+};
+
+export default function FreeSoloCreateOptionDialog(taskList: object, token: string) {
     const [value, setValue] = React.useState<FilmOptionType | null>(null);
     const [open, toggleOpen] = React.useState(false);
+    const accessToken = taskList.token
 
-    const top100Films = list.top100Films;
-    const options = top100Films.map((option: { title: string, year: number }) => {
+
+    const options = taskList.taskList.data.map((option: Record) => {
         return {
             typeTitle: option.bookmarked ? 'Bookmarked' : 'Tasks',
             ...option
         }
     });
 
+    const queryClient = useQueryClient();
 
+    const saveTaskMutation = useMutation({
+        mutationFn: (newTask) => saveTask(newTask.name, newTask.token),
+        onSuccess: () => {
+            queryClient.invalidateQueries('tasks');
+        }
+    });
+
+    const bookmarkMutation = useMutation({
+        mutationFn: (bookmarkedState) => bookmark(bookmarkedState.id, bookmarkedState.token),
+        onSuccess: () => {
+            queryClient.invalidateQueries('tasks');
+        }
+    })
+    const unbookmarkMutation = useMutation({
+        mutationFn: (bookmarkedState) =>  unbookmark(bookmarkedState.id, bookmarkedState.token),
+        onSuccess: () => {
+            queryClient.invalidateQueries('tasks');
+        }
+    })
+    
+    const changeBookmarkState = (bookmark: boolean, id: number, token: string) => {
+
+        if (bookmark)
+            unbookmarkMutation.mutate({ id, token })
+        else
+            bookmarkMutation.mutate({ id, token })
+    }
+
+    
 
     const handleClose = () => {
         setDialogValue({
-            title: '',
-            year: '',
+            name: '',
         });
         toggleOpen(false);
     };
 
     const [dialogValue, setDialogValue] = React.useState({
-        title: '',
-        year: '',
+        name: '',
     });
 
     const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setValue({
-            title: dialogValue.title,
-            year: parseInt(dialogValue.year, 10),
+            name: dialogValue.name,
         });
+
+        saveTaskMutation.mutate({ name: dialogValue.name, token: accessToken })
+
         handleClose();
     };
 
@@ -59,7 +151,7 @@ export default function FreeSoloCreateOptionDialog() {
                 options={options}
 
                 groupBy={(option) => option.typeTitle}
-                getOptionLabel={(option) => option.title}
+                getOptionLabel={(option) => option.name}
 
                 onChange={(event, newValue) => {
                     if (typeof newValue === 'string') {
@@ -67,15 +159,13 @@ export default function FreeSoloCreateOptionDialog() {
                         setTimeout(() => {
                             toggleOpen(true);
                             setDialogValue({
-                                title: newValue,
-                                year: '',
+                                name: newValue,
                             });
                         });
                     } else if (newValue && newValue.inputValue) {
                         toggleOpen(true);
                         setDialogValue({
-                            title: newValue.inputValue,
-                            year: '',
+                            name: newValue.inputValue,
                         });
                     } else {
                         setValue(newValue);
@@ -90,7 +180,7 @@ export default function FreeSoloCreateOptionDialog() {
                         filtered.push({
                             typeTitle: 'Create Task',
                             inputValue: params.inputValue,
-                            title: `Create new task "${params.inputValue}"`,
+                            name: `Create new task "${params.inputValue}"`,
                         });
                     }
 
@@ -105,7 +195,7 @@ export default function FreeSoloCreateOptionDialog() {
                     if (option.inputValue) {
                         return option.inputValue;
                     }
-                    return option.title;
+                    return option.name;
                 }}
                 selectOnFocus
                 clearOnBlur
@@ -113,7 +203,7 @@ export default function FreeSoloCreateOptionDialog() {
                 renderOption={(props, option) => {
                     const { key, ...optionProps } = props;
                     return (
-                        <li style={{
+                        <li key={option.id} style={{
                             display: 'flex',
                             width: '100%',
                             justifyItems: 'center',
@@ -121,7 +211,7 @@ export default function FreeSoloCreateOptionDialog() {
                             justifyContent: 'space-between'
                         }}
                             {...optionProps} >
-                            {option.title}
+                            {option.name}
                             <Box
                                 component="img"
                                 sx={{
@@ -130,8 +220,9 @@ export default function FreeSoloCreateOptionDialog() {
                                     maxHeight: { xs: 20, md: 20 },
                                     maxWidth: { xs: 20, md: 20 },
                                 }}
+                                onClick={() => changeBookmarkState(option.bookmarked, option.id, accessToken)}
                                 alt="The house from the offer."
-                                src={option.year % 2 == 0 ? star : star2}
+                                src={option.bookmarked ? star2 : star}
                             />
                         </li>
                     )
@@ -142,40 +233,27 @@ export default function FreeSoloCreateOptionDialog() {
             />
             <Dialog open={open} onClose={handleClose}>
                 <form onSubmit={handleSubmit}>
-                    <DialogTitle>Add a new film</DialogTitle>
+                    <DialogTitle>Add a new task</DialogTitle>
                     <DialogContent>
                         <DialogContentText>
-                            Did you miss any film in our list? Please, add it!
+                            Here you can add new task
                         </DialogContentText>
                         <TextField
                             autoFocus
                             margin="dense"
                             id="name"
-                            value={dialogValue.title}
+                            value={dialogValue.name}
                             onChange={(event) =>
                                 setDialogValue({
                                     ...dialogValue,
-                                    title: event.target.value,
+                                    name: event.target.value,
                                 })
                             }
-                            label="title"
+                            label="name"
                             type="text"
                             variant="standard"
                         />
-                        <TextField
-                            margin="dense"
-                            id="name"
-                            value={dialogValue.year}
-                            onChange={(event) =>
-                                setDialogValue({
-                                    ...dialogValue,
-                                    year: event.target.value,
-                                })
-                            }
-                            label="year"
-                            type="number"
-                            variant="standard"
-                        />
+
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={handleClose}>Cancel</Button>
@@ -189,7 +267,7 @@ export default function FreeSoloCreateOptionDialog() {
 
 interface FilmOptionType {
     inputValue?: string;
-    title: string;
+    name: string;
     year?: number;
 }
 

@@ -1,10 +1,11 @@
 import UseAutocomplete from "./SearchBar";
 import CheckboxesTags from "./CheckboxesTags";
 import Grouped from "./Grouped";
-import FreeSoloCreateOptionDialog from "./FreeSoloCreateOptionType";
+import FreeSoloCreateOptionDialog from "./TaskBar";
 import { Container } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Typography } from "@mui/material";
 
 const getAuthData = async (email, password) => {
 	try {
@@ -29,7 +30,8 @@ const getAuthData = async (email, password) => {
 
 const getTasks = async (token) => {
 	const res = await fetch('https://timtest.timenotes.io/api/v1/tasks?page=1&per_page=10', {
-		method: 'GET', headers: {
+		method: 'GET',
+		headers: {
 			'Authorization': token,
 		},
 	});
@@ -43,33 +45,34 @@ export default function Home() {
 	const authQuery = useQuery({
 		queryKey: ['token'],
 		queryFn: () => getAuthData('sokolowskipiotr297@protonmail.com', 'sokolowskipiotr297'),
-		refetchInterval: 600000,
-		staleTime: 300000,
 	});
 
 	const tasksQuery = useQuery({
 		queryKey: ['tasks', accessToken],
 		queryFn: () => getTasks(accessToken),
-		enabled: !!accessToken && accessToken !== null,   
+		enabled: !!accessToken && accessToken !== null,
 		refetchInterval: 60000,
-		staleTime: 59999
+		staleTime: 30000 
 	});
 
 	useEffect(() => {
-		if (authQuery.data)
-		{
+		if (authQuery.data) {
 			setAccessToken(authQuery.data.accessToken)
 		}
+
+	}, [authQuery.data]);
+	
+	useEffect(() => {
 		if (tasksQuery.data) {
 			setTasks(tasksQuery.data);
 		}
-	}, [authQuery.data]);
+	}, [tasksQuery])
 
 	if (authQuery.isLoading || tasksQuery.isLoading) return <div>Loading...</div>;
 	if (authQuery.error || tasksQuery.error) return <div>Request Failed</div>;
 
-	
-	console.log(tasks)
+
+
 	return (
 		<Container
 			sx={{
@@ -80,10 +83,11 @@ export default function Home() {
 				justifyContent: 'center',
 			}}
 		>
-			{tasks !== null ? tasks.data.map(e => {
-				return <div>{e.name}</div>
-			}) : ""}
-			<FreeSoloCreateOptionDialog taskList={tasks} />
+			<Typography variant="h4" mb={4}>Task Search Bar</Typography>
+			{!tasksQuery.isLoading && tasks !== null ?
+				<FreeSoloCreateOptionDialog taskList={tasks} token={accessToken} /> :
+				<div>Loading</div>
+			}
 		</Container>
 	);
 }

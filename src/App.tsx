@@ -4,7 +4,18 @@ import { RouterProvider, type createRouter } from "@tanstack/react-router";
 import type { FunctionComponent } from "./common/types";
 import { TanStackRouterDevelopmentTools } from "./components/utils/development-tools/TanStackRouterDevelopmentTools";
 
-const queryClient = new QueryClient();
+const twentyFourHoursInMs = 1000 * 60 * 60 * 24;
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			refetchOnWindowFocus: false,
+			refetchOnmount: false,
+			refetchOnReconnect: false,
+			retry: false,
+			staleTime: twentyFourHoursInMs,
+		},
+	},
+});
 
 type AppProps = { router: ReturnType<typeof createRouter> };
 
