@@ -10,11 +10,11 @@ import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete';
 import { Box } from '@mui/system';
 import star from '../assets/star.png'
 import star2 from '../assets/star_full.png'
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation} from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import { bookmark, unbookmark, saveTask } from './mutations';
 
-const filter = createFilterOptions<FilmOptionType>();
+const filter = createFilterOptions<any>();
 
 interface Record {
     inputValue?: string;
@@ -24,14 +24,24 @@ interface Record {
 }
 
 
+interface Task {
+    name: string, 
+    token: any 
+}
 
-export default function FreeSoloCreateOptionDialog(taskList: object, token: string) {
-    const [value, setValue] = React.useState<FilmOptionType | null>(null);
+interface Bookmark {
+    id: number, 
+    token: string
+}
+
+export default function TaskBar(taskList: any) {
+    const [value, setValue] = React.useState<object | null>(null);
     const [open, toggleOpen] = React.useState(false);
     const accessToken = localStorage.getItem('token')
+    const records = taskList.taskList.data
 
 
-    const options = taskList.taskList.data.map((option: Record) => {
+    const options = records.map((option: Record) => {
         return {
             typeTitle: option.bookmarked ? 'Bookmarked' : 'Tasks',
             ...option
@@ -41,22 +51,22 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
     const queryClient = useQueryClient();
 
     const saveTaskMutation = useMutation({
-        mutationFn: (newTask) => saveTask(newTask.name, accessToken),
+        mutationFn: (newTask: Task) => saveTask(newTask.name, accessToken !== null ? accessToken : ""),
         onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
     });
 
     const bookmarkMutation = useMutation({
-        mutationFn: (bookmarkedState) => bookmark(bookmarkedState.id, accessToken),
+        mutationFn: (bookmarkedState: Bookmark) => bookmark(bookmarkedState.id, accessToken !== null ? accessToken : "" ),
         onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
     })
     const unbookmarkMutation = useMutation({
-        mutationFn: (bookmarkedState) => unbookmark(bookmarkedState.id, accessToken),
+        mutationFn: (bookmarkedState: Bookmark) => unbookmark(bookmarkedState.id, accessToken !== null ? accessToken : ""),
         onSuccess: () => {
-            queryClient.invalidateQueries('tasks');
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
         }
     })
 
@@ -87,7 +97,7 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
             name: dialogValue.name,
         });
 
-        saveTaskMutation.mutate({ name: dialogValue.name, token: accessToken })
+        saveTaskMutation.mutate({ name: dialogValue.name, token : accessToken })
 
         handleClose();
     };
@@ -99,10 +109,9 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
                 value={value}
                 options={options}
 
-                groupBy={(option) => option.typeTitle}
-                getOptionLabel={(option) => option.name}
+                groupBy={(option: any) => option.typeTitle}
 
-                onChange={(event, newValue) => {
+                onChange={(_, newValue: any) => {
                     if (typeof newValue === 'string') {
                         // timeout to avoid instant validation of the dialog's form.
                         setTimeout(() => {
@@ -136,7 +145,7 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
                     return filtered;
                 }}
 
-                getOptionLabel={(option) => {
+                getOptionLabel={(option: any) => {
                     if (typeof option === 'string') {
                         return option;
                     }
@@ -168,7 +177,7 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
                                     maxHeight: { xs: 20, md: 20 },
                                     maxWidth: { xs: 20, md: 20 },
                                 }}
-                                onClick={() => changeBookmarkState(option.bookmarked, option.id, accessToken)}
+                                onClick={() => changeBookmarkState(option.bookmarked, option.id, accessToken !== null ? accessToken : "")}
                                 alt="The house from the offer."
                                 src={option.bookmarked ? star2 : star}
                             />
@@ -213,8 +222,8 @@ export default function FreeSoloCreateOptionDialog(taskList: object, token: stri
     );
 }
 
-interface FilmOptionType {
+/* interface FilmOptionType {
     inputValue?: string;
     name: string;
     year?: number;
-}
+} */

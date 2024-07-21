@@ -1,18 +1,14 @@
-import UseAutocomplete from "./SearchBar";
-import CheckboxesTags from "./CheckboxesTags";
-import Grouped from "./Grouped";
-import FreeSoloCreateOptionDialog from "./TaskBar";
+import TaskBar from "./TaskBar";
 import { Container } from "@mui/system";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { getAuthData, getTasks  } from "./queries";
+import { getTasks  } from "./queries";
 import { Typography, Button } from "@mui/material";
-import { useMatch, useParams } from "@tanstack/react-router";
 
 
 export default function Home() {
-	const [tasks, setTasks] = useState(null);
-	const accessToken = localStorage.getItem('token')
+	const [tasks, setTasks] = useState<object | null>(null);
+	const accessToken: string | null = localStorage.getItem('token')
 
 	
 	const logOut = () => {
@@ -22,7 +18,7 @@ export default function Home() {
 
 	const tasksQuery = useQuery({
 		queryKey: ['tasks', accessToken],
-		queryFn: () => getTasks(accessToken),
+		queryFn: () => getTasks(accessToken ? accessToken : ""),
 		enabled: !!accessToken && accessToken !== null,
 		refetchInterval: 60000,
 		staleTime: 30000
@@ -31,7 +27,7 @@ export default function Home() {
 	
 	
 
-	if(!accessToken) return <div>No access</div>
+	if(!accessToken) return <div>No access. Please go back to login page.</div>
 	
 	useEffect(() => {
 		if (tasksQuery.data) {
@@ -56,11 +52,11 @@ export default function Home() {
 
 			<Typography variant="h4" mb={4}>Task Search Bar</Typography>
 			{!tasksQuery.isLoading && tasks !== null ?
-				<FreeSoloCreateOptionDialog taskList={tasks} token={accessToken} /> :
+				<TaskBar taskList={tasks} token={accessToken} /> :
 				<div>Loading</div>
 
 			}
-			<Button variant="none" onClick={logOut}>Log Out</Button>
+			<Button variant="outlined" onClick={logOut}>Log Out</Button>
 		</Container>
 		</>
 	);

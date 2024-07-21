@@ -1,32 +1,27 @@
- import * as React from 'react';
+import * as React from 'react';
 import { FormControl, useFormControlContext } from '@mui/base/FormControl';
 import FormGroup from '@mui/material/FormGroup';
 import { Input, inputClasses } from '@mui/base/Input';
 import { styled } from '@mui/system';
-import clsx from 'clsx';
-import { Button, Container, Typography, FormLabel, TextField } from '@mui/material';
+import { Button, Container, Typography, FormLabel } from '@mui/material';
 import { useState } from 'react';
-import { FunctionComponent } from '../common/types';
-import { FormSubmitHandler } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import Home from './Home';
 import { getAuthData } from './queries';
 import { useEffect } from 'react';
+
+
 
 export default function LoginScreen() {
 
     const [email, setEmail] = useState<string>('');
     const [password, setPassoword] = useState<string>('');
-    const [inputs, setInputs] = useState<object>({});
-    const [isAuthLoading, setIsAuthLoading] = useState<boolean>(false);
-    const [authData, setAuthData] = useState<object>({});
     const [accessToken, setAccessToken] = useState<string>("");
     const navigate = useNavigate();
 
 
     
-    const authQuery = useQuery({
+    const authQuery = useQuery<any>({
         queryKey: ['token'],
         queryFn: () => getAuthData(email, password),
     });
@@ -40,25 +35,26 @@ export default function LoginScreen() {
 
     
 
-    const handleSubmit = async (event) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        console.log(event.target.email.value)
-        console.log(event.target.password.value)
+         const target = event.target as HTMLFormElement;
 
-        setEmail(event.target.email.value)
-        setPassoword(event.target.password.value)
+        const emailInput = target.elements.namedItem('email') as HTMLInputElement;
+        const passwordInput = target.elements.namedItem('password') as HTMLInputElement;
 
-        if(authQuery.data.accessToken && accessToken !== undefined)
+        setEmail(emailInput.value);
+        setPassoword(passwordInput.value);
+
+        if(authQuery?.data?.accessToken && accessToken !== undefined)
         {
-            setAccessToken(authQuery.data.accessToken)
+            setAccessToken(authQuery?.data?.accessToken)
             localStorage.setItem('token', authQuery.data.accessToken)
             navigate({ to: '/home' })
         }
         
     };
     
-    const auth = true;
         
 
     if(accessToken == "")
@@ -84,7 +80,7 @@ export default function LoginScreen() {
                                 name="email"
                                 label="email"
                                 onChange={e => setEmail(e.target.value)}
-                                value={inputs.email}
+                                
                                 placeholder="Write your name here" />
                             <HelperText />
                         </FormControl>
@@ -94,12 +90,11 @@ export default function LoginScreen() {
                                 name="password"
                                 label="password"
                                 onChange={e => setPassoword(e.target.value)}
-                                value={inputs.password}
+                                
                                 placeholder="Write your password here" />
                             <HelperText />
                         </FormControl>
                         <Button variant="outlined" type="submit">Submit</Button>
-                        <Button onClick={() => { navigate({ to: '/home' }) }}>Next</Button>
                     </FormGroup>
                 </form>
             </Container>
@@ -107,7 +102,7 @@ export default function LoginScreen() {
 
     }
     else
-        navigate({ to: '/home', params: accessToken })
+        return navigate({ to: '/home', params: accessToken })
 }
 
 const StyledInput = styled(Input)(
@@ -138,41 +133,6 @@ const StyledInput = styled(Input)(
   }
 `,
 );
-
-const Label = styled(
-    ({ children, className }: { children?: React.ReactNode; className?: string }) => {
-        const formControlContext = useFormControlContext();
-        const [dirty, setDirty] = React.useState(false);
-
-        React.useEffect(() => {
-            if (formControlContext?.filled) {
-                setDirty(true);
-            }
-        }, [formControlContext]);
-
-        if (formControlContext === undefined) {
-            return <p>{children}</p>;
-        }
-
-        const { error, required, filled } = formControlContext;
-        const showRequiredError = dirty && required && !filled;
-
-        return (
-            <p className={clsx(className, error || showRequiredError ? 'invalid' : '')}>
-                {children}
-                {required ? ' *' : ''}
-            </p>
-        );
-    },
-)`
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 0.875rem;
-  margin-bottom: 4px;
-
-  &.invalid {
-    color: red;
-  }
-`;
 
 const HelperText = styled((props: {}) => {
     const formControlContext = useFormControlContext();

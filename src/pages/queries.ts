@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 
 
-export const getAuthData = async (email, password) => {
+export const getAuthData = async (email: string, password: string) => {
     try {
         const res = await fetch('https://timtest.timenotes.io/api/v1/login', {
             method: "POST",
@@ -22,7 +21,7 @@ export const getAuthData = async (email, password) => {
     }
 };
 
-export const getTasks = async (token) => {
+export const getTasks = async (token: string ) => {
     const res = await fetch('https://timtest.timenotes.io/api/v1/tasks?page=1&per_page=10', {
         method: 'GET',
         headers: {

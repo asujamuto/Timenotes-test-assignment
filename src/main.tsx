@@ -1,4 +1,3 @@
-import { createRootRoute, createRouter } from "@tanstack/react-router";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.tsx";
